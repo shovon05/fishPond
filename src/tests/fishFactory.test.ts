@@ -18,7 +18,7 @@ describe('fishFactory', () => {
       expect(fish.depth).toBeLessThanOrEqual(1);
       expect(fish.colorPalette).toBeGreaterThanOrEqual(0);
       expect(fish.colorPalette).toBeLessThanOrEqual(4);
-      expect(fish.spine).toHaveLength(14);
+      expect(fish.spine).toHaveLength(16);
       expect(fish.motionState).toBe('cruise');
     });
 

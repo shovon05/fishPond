@@ -1,53 +1,127 @@
-// Three.js renderer for Living Pond
+// Three.js renderer for Living Pond with high-fidelity realistic Koi meshes
 
 import * as THREE from 'three';
 import type { FishState, RippleState, FoodParticle, AtmospherePreset } from '../types';
 import { SPINE_COUNT } from '../simulation/fishFactory';
 import { seededRandom } from '../utils/math';
 
-// ── Colour palettes for koi varieties ──────────────────────────
-const KOI_PALETTES: Array<{ body: number; patch: number; belly: number; fin: number }> = [
-  { body: 0xfff3e0, patch: 0xe8734a, belly: 0xfff8f0, fin: 0xf5c8a0 },  // Ivory/Vermilion
-  { body: 0xf5f5f5, patch: 0x2c2c2c, belly: 0xffffff, fin: 0xd0d0d0 },  // White/Charcoal
-  { body: 0xffe0a0, patch: 0xd4890a, belly: 0xfff4c0, fin: 0xf0c060 },  // Pale gold
-  { body: 0xffb347, patch: 0xc0392b, belly: 0xffd080, fin: 0xe08030 },  // Warm orange
-  { body: 0xd8d8d8, patch: 0x8fa8b0, belly: 0xf0f0f0, fin: 0xc0c8d0 },  // Muted grey
+// ── Realistic authentic Japanese Koi Palettes ─────────────────
+interface KoiStyle {
+  name: string;
+  baseColor: number;
+  patternColor: number;
+  patternColor2?: number;
+  finColor: number;
+  roughness: number;
+}
+
+const KOI_STYLES: KoiStyle[] = [
+  // Kohaku: Pristine porcelain white with vibrant crimson-red hi patches
+  {
+    name: 'Kohaku',
+    baseColor: 0xfffcf7,
+    patternColor: 0xd62828,
+    patternColor2: 0xf77f00,
+    finColor: 0xffffff,
+    roughness: 0.3,
+  },
+  // Showa Sanshoku: Deep obsidian black with fiery red and snow white markings
+  {
+    name: 'Showa',
+    baseColor: 0x1a1a1a,
+    patternColor: 0xcc2900,
+    patternColor2: 0xffffff,
+    finColor: 0x222222,
+    roughness: 0.35,
+  },
+  // Yamabuki Ogon: Radiant metallic warm golden yellow
+  {
+    name: 'Yamabuki',
+    baseColor: 0xf9a825,
+    patternColor: 0xffd54f,
+    patternColor2: 0xff8f00,
+    finColor: 0xffe082,
+    roughness: 0.2,
+  },
+  // Shiro Utsuri: Crisp velvet black and porcelain white
+  {
+    name: 'Shiro Utsuri',
+    baseColor: 0xffffff,
+    patternColor: 0x111113,
+    finColor: 0xf0f0f0,
+    roughness: 0.3,
+  },
+  // Asagi: Diamond-scaled indigo blue-grey back with bright orange-red underbelly & fins
+  {
+    name: 'Asagi',
+    baseColor: 0x546e7a,
+    patternColor: 0x37474f,
+    patternColor2: 0xd84315,
+    finColor: 0xff7043,
+    roughness: 0.35,
+  },
 ];
 
-// ── Atmosphere colour presets ──────────────────────────────────
+// ── Atmosphere presets with lush natural pond lighting ────────
 const ATMOSPHERE: Record<AtmospherePreset, {
   waterDeep: number;
   waterShallow: number;
-  fogColor: number;
   ambientColor: number;
   ambientIntensity: number;
-  directionalColor: number;
-  directionalIntensity: number;
+  sunColor: number;
+  sunIntensity: number;
+  causticColor: number;
+  causticIntensity: number;
 }> = {
   noon: {
-    waterDeep: 0x0a2d3d, waterShallow: 0x1a6b6b,
-    fogColor: 0x87ceeb, ambientColor: 0xd0e8ff, ambientIntensity: 0.9,
-    directionalColor: 0xfff5e0, directionalIntensity: 1.2,
+    waterDeep: 0x06282d,
+    waterShallow: 0x0f5b66,
+    ambientColor: 0xb8e2f2,
+    ambientIntensity: 0.9,
+    sunColor: 0xfffaf0,
+    sunIntensity: 1.4,
+    causticColor: 0x8fe3ff,
+    causticIntensity: 0.25,
   },
   dawn: {
-    waterDeep: 0x1a1a3a, waterShallow: 0x3a5a6a,
-    fogColor: 0xffb090, ambientColor: 0xffd0a0, ambientIntensity: 0.7,
-    directionalColor: 0xffa060, directionalIntensity: 0.9,
+    waterDeep: 0x0d1b2a,
+    waterShallow: 0x1b4965,
+    ambientColor: 0xffcfd2,
+    ambientIntensity: 0.8,
+    sunColor: 0xffb703,
+    sunIntensity: 1.1,
+    causticColor: 0xffd166,
+    causticIntensity: 0.18,
   },
   dusk: {
-    waterDeep: 0x1a1030, waterShallow: 0x4a2a4a,
-    fogColor: 0xff8060, ambientColor: 0xffb090, ambientIntensity: 0.65,
-    directionalColor: 0xff6030, directionalIntensity: 0.8,
+    waterDeep: 0x101026,
+    waterShallow: 0x283845,
+    ambientColor: 0xf4a261,
+    ambientIntensity: 0.7,
+    sunColor: 0xe76f51,
+    sunIntensity: 1.0,
+    causticColor: 0xf4a261,
+    causticIntensity: 0.15,
   },
   night: {
-    waterDeep: 0x050a18, waterShallow: 0x0a1a28,
-    fogColor: 0x0a1428, ambientColor: 0x304060, ambientIntensity: 0.4,
-    directionalColor: 0x8090c0, directionalIntensity: 0.3,
+    waterDeep: 0x020a12,
+    waterShallow: 0x071e2c,
+    ambientColor: 0x1d3557,
+    ambientIntensity: 0.45,
+    sunColor: 0x89c2d9,
+    sunIntensity: 0.4,
+    causticColor: 0x468faf,
+    causticIntensity: 0.1,
   },
   rain: {
-    waterDeep: 0x0d2535, waterShallow: 0x1a4040,
-    fogColor: 0x607080, ambientColor: 0xa0b8c8, ambientIntensity: 0.6,
-    directionalColor: 0xd0dde8, directionalIntensity: 0.5,
+    waterDeep: 0x0a1c24,
+    waterShallow: 0x183a48,
+    ambientColor: 0x90a4ae,
+    ambientIntensity: 0.65,
+    sunColor: 0xcfd8dc,
+    sunIntensity: 0.7,
+    causticColor: 0xb0bec5,
+    causticIntensity: 0.12,
   },
 };
 
@@ -65,16 +139,14 @@ export class PondRenderer {
   private canvas: HTMLCanvasElement;
   private disposed = false;
 
-  // Scene objects
   private pondBed!: THREE.Mesh;
   private waterSurface!: THREE.Mesh;
   private fishMeshes: Map<number, FishMeshGroup> = new Map();
   private rippleMeshes: Map<number, THREE.Mesh> = new Map();
   private foodMeshes: Map<number, THREE.Mesh> = new Map();
-  private lilies: THREE.Mesh[] = [];
+  private lilies: THREE.Group[] = [];
   private waterUniforms!: WaterUniforms;
 
-  // Lighting
   private ambientLight!: THREE.AmbientLight;
   private sunLight!: THREE.DirectionalLight;
   private rimLight!: THREE.DirectionalLight;
@@ -93,7 +165,7 @@ export class PondRenderer {
         canvas: this.canvas,
         antialias: true,
         alpha: false,
-        powerPreference: 'default',
+        powerPreference: 'high-performance',
       });
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -128,22 +200,22 @@ export class PondRenderer {
     this.ambientLight = new THREE.AmbientLight(p.ambientColor, p.ambientIntensity);
     this.scene.add(this.ambientLight);
 
-    this.sunLight = new THREE.DirectionalLight(p.directionalColor, p.directionalIntensity);
-    this.sunLight.position.set(0.5, 1, 2);
+    this.sunLight = new THREE.DirectionalLight(p.sunColor, p.sunIntensity);
+    this.sunLight.position.set(0.6, 1.2, 3);
     this.scene.add(this.sunLight);
 
-    this.rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
-    this.rimLight.position.set(-1, -0.5, 1);
+    this.rimLight = new THREE.DirectionalLight(0xa5d6a7, 0.35);
+    this.rimLight.position.set(-1, -0.8, 2);
     this.scene.add(this.rimLight);
   }
 
   private buildPondBed(): void {
-    const geo = new THREE.PlaneGeometry(3, 3, 32, 32);
+    const geo = new THREE.PlaneGeometry(3.6, 3.6, 64, 64);
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uDeepColor: { value: new THREE.Color(0x0a2d3d) },
-        uShallowColor: { value: new THREE.Color(0x1a6b6b) },
+        uDeepColor: { value: new THREE.Color(0x06282d) },
+        uShallowColor: { value: new THREE.Color(0x0f5b66) },
       },
       vertexShader: /* glsl */`
         varying vec2 vUv;
@@ -158,27 +230,40 @@ export class PondRenderer {
         uniform vec3 uShallowColor;
         varying vec2 vUv;
 
-        float noise(vec2 p) {
-          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-        }
-
-        float smoothNoise(vec2 p) {
-          vec2 i = floor(p);
-          vec2 f = fract(p);
-          f = f * f * (3.0 - 2.0 * f);
-          float a = noise(i);
-          float b = noise(i + vec2(1.0, 0.0));
-          float c = noise(i + vec2(0.0, 1.0));
-          float d = noise(i + vec2(1.0, 1.0));
-          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        // Simplex/Perlin noise helper
+        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+        float snoise(vec2 v){
+          const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                   -0.577350269189626, 0.024390243902439);
+          vec2 i  = floor(v + dot(v, C.yy) );
+          vec2 x0 = v -   i + dot(i, C.xx);
+          vec2 i1  = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+          vec4 x12 = x0.xyxy + C.xxzz;
+          x12.xy -= i1;
+          i = mod(i, 289.0);
+          vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+                + i.x + vec3(0.0, i1.x, 1.0 ));
+          vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
+            dot(x12.zw,x12.zw)), 0.0);
+          m = m*m ;
+          m = m*m ;
+          vec3 x = 2.0 * fract(p * C.www) - 1.0;
+          vec3 h = abs(x) - 0.5;
+          vec3 ox = floor(x + 0.5);
+          vec3 a0 = x - ox;
+          m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+          vec3 g;
+          g.x  = a0.x  * x0.x  + h.x  * x0.y;
+          g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+          return 130.0 * dot(m, g);
         }
 
         float fbm(vec2 p) {
           float v = 0.0;
           float amp = 0.5;
           for (int i = 0; i < 4; i++) {
-            v += smoothNoise(p) * amp;
-            p *= 2.1;
+            v += snoise(p) * amp;
+            p *= 2.05;
             amp *= 0.5;
           }
           return v;
@@ -186,23 +271,28 @@ export class PondRenderer {
 
         void main() {
           vec2 uv = vUv - 0.5;
-          float dist = length(uv * vec2(1.0, 1.1));
+          float d = length(uv * vec2(1.0, 1.15));
 
-          float pondEdge = smoothstep(0.52, 0.42, dist);
+          // Soft organic pond banks
+          float pondMask = smoothstep(0.56, 0.40, d);
 
-          float depth = 1.0 - dist * 1.6;
-          depth = clamp(depth, 0.0, 1.0);
+          // Deep center vs shallow outer banks
+          float depth = clamp(1.0 - d * 1.5, 0.0, 1.0);
 
-          float n = fbm(uv * 5.0 + uTime * 0.04);
-          float n2 = fbm(uv * 8.0 - uTime * 0.02 + 1.7);
+          // Organic currents
+          float flow1 = fbm(uv * 4.0 + vec2(uTime * 0.03, uTime * 0.02));
+          float flow2 = fbm(uv * 8.0 - vec2(uTime * 0.02, uTime * 0.04));
 
-          vec3 col = mix(uShallowColor, uDeepColor, depth * 0.85 + n * 0.1);
-          col += n2 * 0.04 * uShallowColor;
+          vec3 col = mix(uShallowColor, uDeepColor, depth * 0.75 + flow1 * 0.15);
+          col += flow2 * 0.05 * uShallowColor;
 
-          float pebbly = smoothNoise(uv * 18.0) * (1.0 - depth) * 0.08;
-          col += pebbly;
+          // Subtle underwater river pebble texture
+          float pebbles = snoise(uv * 32.0) * (1.0 - depth) * 0.06;
+          col += pebbles;
 
-          col = mix(col * 0.3, col, pondEdge);
+          // Edge vignetting into lush deep dark moss
+          vec3 edgeMoss = vec3(0.02, 0.08, 0.07);
+          col = mix(edgeMoss, col, pondMask);
 
           gl_FragColor = vec4(col, 1.0);
         }
@@ -215,10 +305,10 @@ export class PondRenderer {
   }
 
   private buildWaterSurface(): void {
-    const geo = new THREE.PlaneGeometry(3, 3, 1, 1);
+    const geo = new THREE.PlaneGeometry(3.6, 3.6, 1, 1);
     const uniforms: WaterUniforms = {
       uTime: { value: 0 },
-      uHighlightColor: { value: new THREE.Color(0x80c8d8) },
+      uHighlightColor: { value: new THREE.Color(0x8fe3ff) },
       uReflectColor: { value: new THREE.Color(0xffffff) },
     };
     this.waterUniforms = uniforms;
@@ -241,30 +331,44 @@ export class PondRenderer {
         uniform vec3 uReflectColor;
         varying vec2 vUv;
 
-        float noise(vec2 p) {
-          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        // Voronoi-like water caustic function
+        vec2 hash2(vec2 p) {
+          p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+          return fract(sin(p) * 43758.5453);
         }
-        float smoothNoise(vec2 p) {
-          vec2 i = floor(p); vec2 f = fract(p);
-          f = f*f*(3.0-2.0*f);
-          return mix(mix(noise(i),noise(i+vec2(1,0)),f.x),
-                     mix(noise(i+vec2(0,1)),noise(i+vec2(1,1)),f.x),f.y);
+
+        float voronoi(vec2 x) {
+          vec2 n = floor(x);
+          vec2 f = fract(x);
+          float m = 8.0;
+          for (int j = -1; j <= 1; j++) {
+            for (int i = -1; i <= 1; i++) {
+              vec2 g = vec2(float(i), float(j));
+              vec2 o = hash2(n + g);
+              // Animated caustic jitter
+              o = 0.5 + 0.45 * sin(uTime * 0.8 + 6.2831 * o);
+              vec2 r = g - f + o;
+              float d = dot(r, r);
+              if (d < m) m = d;
+            }
+          }
+          return sqrt(m);
         }
 
         void main() {
-          vec2 uv = vUv - 0.5;
-          float dist = length(uv * vec2(1.0, 1.1));
-          float pondMask = smoothstep(0.52, 0.40, dist);
+          vec2 uv = (vUv - 0.5) * 2.0;
+          float d = length(uv * vec2(1.0, 1.1));
+          float mask = smoothstep(1.05, 0.7, d);
 
-          float t = uTime * 0.3;
-          float shimmer1 = smoothNoise(uv * 12.0 + vec2(t, t * 0.7));
-          float shimmer2 = smoothNoise(uv * 18.0 - vec2(t * 1.1, t * 0.4));
-          float shimmer = pow(shimmer1 * shimmer2, 1.8);
+          // Layered caustics with different scale and speed
+          float c1 = voronoi(uv * 7.0 + vec2(uTime * 0.15, uTime * 0.1));
+          float c2 = voronoi(uv * 10.0 - vec2(uTime * 0.12, uTime * 0.16));
+          float caustics = pow(c1 * c2, 1.4);
 
-          float caustic = smoothNoise(uv * 6.0 + uTime * 0.15);
-          caustic = pow(caustic, 2.0) * 0.4;
+          // Sunlight shimmer on surface ripples
+          float shimmer = smoothstep(0.4, 0.05, c1) * 0.35 + smoothstep(0.35, 0.05, c2) * 0.25;
 
-          float alpha = (shimmer * 0.18 + caustic * 0.08) * pondMask;
+          float alpha = (caustics * 0.22 + shimmer * 0.28) * mask;
           vec3 col = mix(uHighlightColor, uReflectColor, shimmer);
 
           gl_FragColor = vec4(col, alpha);
@@ -278,42 +382,55 @@ export class PondRenderer {
   }
 
   private buildVegetation(): void {
-    const rng = seededRandom(777);
+    const rng = seededRandom(108);
 
+    // Create 7 natural clumps of Japanese water-lily leaves (Lotus pads)
     for (let i = 0; i < 7; i++) {
-      const angle = rng() * Math.PI * 2;
-      const r = 0.4 + rng() * 0.45;
-      const pos = new THREE.Vector3(
-        Math.cos(angle) * r * 0.9,
-        Math.sin(angle) * r,
-        0.1
-      );
+      const angle = (i / 7) * Math.PI * 2 + (rng() - 0.5) * 0.5;
+      const r = 0.52 + rng() * 0.35;
+      const x = Math.cos(angle) * r * 1.1;
+      const y = Math.sin(angle) * r * 0.9;
 
-      const pad = this.makeLilyPad(rng);
-      pad.position.copy(pos);
-      this.scene.add(pad);
-      this.lilies.push(pad);
+      const lilyGroup = this.makeLilyGroup(rng);
+      lilyGroup.position.set(x, y, 0.15);
+      this.scene.add(lilyGroup);
+      this.lilies.push(lilyGroup);
     }
   }
 
-  private makeLilyPad(rng: () => number): THREE.Mesh {
-    const scale = 0.04 + rng() * 0.05;
-    const geo = new THREE.CircleGeometry(scale, 20);
+  private makeLilyGroup(rng: () => number): THREE.Group {
+    const group = new THREE.Group();
+    const count = 1 + Math.floor(rng() * 2.5);
 
-    const color = new THREE.Color().setHSL(0.35 + rng() * 0.08, 0.6, 0.25 + rng() * 0.1);
-    const mat = new THREE.MeshLambertMaterial({
-      color,
-      transparent: true,
-      opacity: 0.85,
-      side: THREE.DoubleSide,
-    });
+    for (let j = 0; j < count; j++) {
+      const radius = 0.065 + rng() * 0.04;
+      // Authentic lily pad shape: circle with a notch cut out (thetaLength < 2*PI)
+      const geo = new THREE.CircleGeometry(radius, 24, 0.35, Math.PI * 1.8);
+      const greenHue = 0.31 + rng() * 0.04;
+      const mat = new THREE.MeshLambertMaterial({
+        color: new THREE.Color().setHSL(greenHue, 0.65, 0.28 + rng() * 0.08),
+        side: THREE.DoubleSide,
+      });
+      const pad = new THREE.Mesh(geo, mat);
+      pad.position.set((rng() - 0.5) * 0.06, (rng() - 0.5) * 0.06, j * 0.005);
+      pad.rotation.z = rng() * Math.PI * 2;
 
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.z = rng() * Math.PI * 2;
-    return mesh;
+      // Lily pad shadow on pond bed
+      const shadowGeo = new THREE.CircleGeometry(radius * 0.95, 16);
+      const shadowMat = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.22,
+      });
+      const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+      shadow.position.set(pad.position.x + 0.02, pad.position.y - 0.02, -0.4);
+      group.add(shadow);
+
+      group.add(pad);
+    }
+
+    return group;
   }
-
-  // ── Fish mesh management ───────────────────────────────────────
 
   syncFish(fishList: FishState[]): void {
     const activeIds = new Set(fishList.map((f) => f.id));
@@ -335,8 +452,6 @@ export class PondRenderer {
     }
   }
 
-  // ── Ripple management ─────────────────────────────────────────
-
   syncRipples(ripples: RippleState[]): void {
     const activeIds = new Set(ripples.map((r) => r.id));
 
@@ -351,31 +466,29 @@ export class PondRenderer {
 
     for (const ripple of ripples) {
       if (!this.rippleMeshes.has(ripple.id)) {
-        const geo = new THREE.RingGeometry(0.001, 0.002, 32);
+        const geo = new THREE.RingGeometry(0.001, 0.003, 32);
         const mat = new THREE.MeshBasicMaterial({
-          color: 0xaaddff,
+          color: 0xdff4fc,
           transparent: true,
-          opacity: 0.6,
+          opacity: 0.8,
           side: THREE.DoubleSide,
         });
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.z = 0.3;
+        mesh.position.z = 0.35;
         this.scene.add(mesh);
         this.rippleMeshes.set(ripple.id, mesh);
       }
 
       const mesh = this.rippleMeshes.get(ripple.id)!;
-      mesh.position.set(ripple.position.x, ripple.position.y, 0.3);
+      mesh.position.set(ripple.position.x, ripple.position.y, 0.35);
       const mat = mesh.material as THREE.MeshBasicMaterial;
       mat.opacity = ripple.opacity;
 
       mesh.geometry.dispose();
-      const inner = Math.max(0.001, ripple.radius - 0.006);
+      const inner = Math.max(0.001, ripple.radius - 0.008);
       mesh.geometry = new THREE.RingGeometry(inner, ripple.radius, 32);
     }
   }
-
-  // ── Food pellet management ─────────────────────────────────────
 
   syncFood(foodList: FoodParticle[]): void {
     const activeIds = new Set(foodList.map((f) => f.id));
@@ -391,25 +504,23 @@ export class PondRenderer {
 
     for (const food of foodList) {
       if (!this.foodMeshes.has(food.id)) {
-        const geo = new THREE.CircleGeometry(0.007, 8);
-        const mat = new THREE.MeshBasicMaterial({
-          color: 0xd4a060,
+        const geo = new THREE.CircleGeometry(0.011, 10);
+        const mat = new THREE.MeshLambertMaterial({
+          color: 0xc4823f,
           transparent: true,
           opacity: 1,
         });
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.z = 0.25;
+        mesh.position.z = 0.28;
         this.scene.add(mesh);
         this.foodMeshes.set(food.id, mesh);
       }
 
       const mesh = this.foodMeshes.get(food.id)!;
-      mesh.position.set(food.position.x, food.position.y, 0.25);
-      (mesh.material as THREE.MeshBasicMaterial).opacity = food.opacity;
+      mesh.position.set(food.position.x, food.position.y, 0.28);
+      (mesh.material as THREE.MeshLambertMaterial).opacity = food.opacity;
     }
   }
-
-  // ── Render frame ──────────────────────────────────────────────
 
   render(time: number): void {
     if (this.disposed) return;
@@ -418,14 +529,15 @@ export class PondRenderer {
     (this.pondBed.material as THREE.ShaderMaterial).uniforms['uTime'].value = t;
     this.waterUniforms['uTime'].value = t;
 
+    // Subtle natural floating drift for lily pads
     for (let i = 0; i < this.lilies.length; i++) {
       const lily = this.lilies[i];
-      lily.position.z = 0.1 + Math.sin(t * 0.3 + i * 1.2) * 0.003;
-      lily.rotation.z += 0.0003 * Math.sin(t * 0.1 + i);
+      lily.position.z = 0.15 + Math.sin(t * 0.5 + i * 1.5) * 0.004;
+      lily.rotation.z += 0.0004 * Math.sin(t * 0.2 + i);
     }
 
     if (this.atmosphereT < 1) {
-      this.atmosphereT = Math.min(1, this.atmosphereT + 0.016 / 3);
+      this.atmosphereT = Math.min(1, this.atmosphereT + 0.016 / 2.5);
       this.applyAtmosphereBlend();
     }
 
@@ -449,9 +561,9 @@ export class PondRenderer {
     this.ambientLight.color = ambientColor;
     this.ambientLight.intensity = lerpVal(from.ambientIntensity, to.ambientIntensity);
 
-    const sunColor = new THREE.Color(from.directionalColor).lerp(new THREE.Color(to.directionalColor), t);
+    const sunColor = new THREE.Color(from.sunColor).lerp(new THREE.Color(to.sunColor), t);
     this.sunLight.color = sunColor;
-    this.sunLight.intensity = lerpVal(from.directionalIntensity, to.directionalIntensity);
+    this.sunLight.intensity = lerpVal(from.sunIntensity, to.sunIntensity);
 
     const deepColor = new THREE.Color(from.waterDeep).lerp(new THREE.Color(to.waterDeep), t);
     const shallowColor = new THREE.Color(from.waterShallow).lerp(new THREE.Color(to.waterShallow), t);
@@ -459,6 +571,9 @@ export class PondRenderer {
     const bedMat = this.pondBed.material as THREE.ShaderMaterial;
     bedMat.uniforms['uDeepColor'].value = deepColor;
     bedMat.uniforms['uShallowColor'].value = shallowColor;
+
+    const causticColor = new THREE.Color(from.causticColor).lerp(new THREE.Color(to.causticColor), t);
+    this.waterUniforms['uHighlightColor'].value = causticColor;
 
     if (t >= 1) {
       this.atmosphere = this.targetAtmosphere;
@@ -506,8 +621,6 @@ export class PondRenderer {
     this.foodMeshes.clear();
     for (const lily of this.lilies) {
       this.scene.remove(lily);
-      (lily.material as THREE.Material).dispose();
-      lily.geometry.dispose();
     }
     this.lilies = [];
     this.pondBed.geometry.dispose();
@@ -518,40 +631,71 @@ export class PondRenderer {
   }
 }
 
-// ── Fish mesh group ────────────────────────────────────────────
+// ── Realistic Articulated Koi Mesh with Fins & Detailed Tail ────
 
 class FishMeshGroup {
   private group: THREE.Group;
   private bodyMesh: THREE.Mesh;
   private shadowMesh: THREE.Mesh;
-  private palette: { body: number; patch: number; belly: number; fin: number };
+  private leftFinMesh: THREE.Mesh;
+  private rightFinMesh: THREE.Mesh;
+  private tailFinMesh: THREE.Mesh;
+  private style: KoiStyle;
 
   constructor(fish: FishState) {
-    this.palette = KOI_PALETTES[fish.colorPalette];
+    this.style = KOI_STYLES[fish.colorPalette % KOI_STYLES.length];
     this.group = new THREE.Group();
 
-    // Shadow
-    const shadowGeo = new THREE.CircleGeometry(fish.bodyLength * 0.4, 12);
+    // 1. Soft underwater shadow projected onto pond bed
+    const shadowGeo = new THREE.PlaneGeometry(fish.bodyLength * 1.1, fish.bodyWidth * 1.8);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.28,
     });
     this.shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-    this.shadowMesh.position.z = -0.3;
+    this.shadowMesh.position.z = -0.35;
     this.group.add(this.shadowMesh);
 
-    // Body — will be rebuilt in update() using spine
+    // 2. Articulated Main Body Mesh (vertex coloured with patterns)
     const bodyGeo = this.buildBodyGeometry(fish);
     const bodyMat = new THREE.MeshLambertMaterial({
-      color: this.palette.body,
       vertexColors: true,
+      side: THREE.DoubleSide,
     });
     this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
     this.bodyMesh.position.z = 0;
     this.group.add(this.bodyMesh);
+
+    // 3. Translucent Pectoral Fins (Left & Right)
+    const finMat = new THREE.MeshLambertMaterial({
+      color: this.style.finColor,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide,
+    });
+
+    const leftFinGeo = this.buildFinGeometry(fish, true);
+    this.leftFinMesh = new THREE.Mesh(leftFinGeo, finMat);
+    this.group.add(this.leftFinMesh);
+
+    const rightFinGeo = this.buildFinGeometry(fish, false);
+    this.rightFinMesh = new THREE.Mesh(rightFinGeo, finMat.clone());
+    this.group.add(this.rightFinMesh);
+
+    // 4. Elegant flowing Caudal (Tail) Fin
+    const tailFinGeo = this.buildTailFinGeometry(fish);
+    const tailMat = new THREE.MeshLambertMaterial({
+      color: this.style.finColor,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide,
+    });
+    this.tailFinMesh = new THREE.Mesh(tailFinGeo, tailMat);
+    this.group.add(this.tailFinMesh);
   }
 
+  /** Builds realistic tapering koi silhouette with organic Kohaku/Showa markings */
   private buildBodyGeometry(fish: FishState): THREE.BufferGeometry {
     const spine = fish.spine;
     const count = spine.length;
@@ -560,22 +704,24 @@ class FishMeshGroup {
     const indices: number[] = [];
     const normals: number[] = [];
 
-    const palette = KOI_PALETTES[fish.colorPalette];
-    const bodyC = new THREE.Color(palette.body);
-    const bellyC = new THREE.Color(palette.belly);
-    const patchC = new THREE.Color(palette.patch);
-    const finC = new THREE.Color(palette.fin);
-
+    const baseCol = new THREE.Color(this.style.baseColor);
+    const pat1Col = new THREE.Color(this.style.patternColor);
+    const pat2Col = this.style.patternColor2 ? new THREE.Color(this.style.patternColor2) : pat1Col;
     const rng = seededRandom(fish.patchSeed);
 
     for (let i = 0; i < count; i++) {
       const t = i / (count - 1);
       const seg = spine[i];
 
-      const widthProfile = Math.sin(t * Math.PI) * fish.bodyWidth * fish.size;
-      const headNarrow = t < 0.15 ? t / 0.15 : 1;
-      const tailNarrow = t > 0.75 ? 1 - (t - 0.75) / 0.25 : 1;
-      const halfW = widthProfile * headNarrow * tailNarrow;
+      // Anatomically correct koi width profile:
+      // Rounded snout -> broad muscular head/shoulders at 25-35% -> tapered caudal peduncle
+      let profile: number;
+      if (t < 0.25) {
+        profile = Math.sin((t / 0.25) * (Math.PI / 2)) * 0.9 + 0.1;
+      } else {
+        profile = Math.cos(((t - 0.25) / 0.75) * (Math.PI / 2));
+      }
+      const halfW = profile * (fish.bodyWidth * 0.6) * fish.size;
 
       const angle = fish.spineAngles[i] ?? fish.heading;
       const perpX = -Math.sin(angle);
@@ -589,11 +735,16 @@ class FishMeshGroup {
       positions.push(lx, ly, 0, rx, ry, 0);
       normals.push(0, 0, 1, 0, 0, 1);
 
-      const patchChance = rng() < 0.35 && t > 0.1 && t < 0.9;
-      const lColor = patchChance ? patchC : (t > 0.4 ? bodyC : bellyC);
-      const rColor = (rng() < 0.3 && t > 0.1) ? patchC : finC;
+      // Procedural patch determination with organic islands
+      const patchNoise = rng();
+      let vertexCol: THREE.Color;
+      if (t > 0.08 && t < 0.82 && patchNoise > 0.38) {
+        vertexCol = patchNoise > 0.72 ? pat2Col : pat1Col;
+      } else {
+        vertexCol = baseCol;
+      }
 
-      colors.push(lColor.r, lColor.g, lColor.b, rColor.r, rColor.g, rColor.b);
+      colors.push(vertexCol.r, vertexCol.g, vertexCol.b, vertexCol.r, vertexCol.g, vertexCol.b);
     }
 
     for (let i = 0; i < count - 1; i++) {
@@ -613,13 +764,49 @@ class FishMeshGroup {
     return geo;
   }
 
+  private buildFinGeometry(fish: FishState, isLeft: boolean): THREE.BufferGeometry {
+    const finLen = fish.bodyLength * 0.35 * fish.size;
+    const finW = fish.bodyWidth * 0.6 * fish.size;
+    const sign = isLeft ? 1 : -1;
+
+    // Triangular wing fin
+    const positions = [
+      0, 0, 0,
+      sign * finW * 0.4, finLen * 0.5, 0,
+      sign * finW, -finLen * 0.5, 0,
+      0, -finLen * 0.3, 0,
+    ];
+    const indices = [0, 1, 2, 0, 2, 3];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    return geo;
+  }
+
+  private buildTailFinGeometry(fish: FishState): THREE.BufferGeometry {
+    const tailLen = fish.bodyLength * 0.55 * fish.size;
+    const tailSpread = fish.bodyWidth * 0.9 * fish.size;
+
+    // Classic graceful fan-tailed koi fin
+    const positions = [
+      0, 0, 0,
+      -tailSpread * 0.7, -tailLen, 0,
+      0, -tailLen * 0.65, 0,
+      tailSpread * 0.7, -tailLen, 0,
+    ];
+    const indices = [0, 1, 2, 0, 2, 3];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    return geo;
+  }
+
   update(fish: FishState): void {
     const geo = this.bodyMesh.geometry;
     const posAttr = geo.attributes['position'] as THREE.BufferAttribute;
     const count = fish.spine.length;
 
     if (posAttr.count < count * 2) {
-      // Rebuild if spine count changed
       this.bodyMesh.geometry.dispose();
       this.bodyMesh.geometry = this.buildBodyGeometry(fish);
       return;
@@ -629,10 +816,13 @@ class FishMeshGroup {
       const t = i / (count - 1);
       const seg = fish.spine[i];
 
-      const widthProfile = Math.sin(t * Math.PI) * fish.bodyWidth * fish.size;
-      const headNarrow = t < 0.15 ? t / 0.15 : 1;
-      const tailNarrow = t > 0.75 ? 1 - (t - 0.75) / 0.25 : 1;
-      const halfW = widthProfile * headNarrow * tailNarrow;
+      let profile: number;
+      if (t < 0.25) {
+        profile = Math.sin((t / 0.25) * (Math.PI / 2)) * 0.9 + 0.1;
+      } else {
+        profile = Math.cos(((t - 0.25) / 0.75) * (Math.PI / 2));
+      }
+      const halfW = profile * (fish.bodyWidth * 0.6) * fish.size;
 
       const angle = fish.spineAngles[i] ?? fish.heading;
       const perpX = -Math.sin(angle);
@@ -648,29 +838,37 @@ class FishMeshGroup {
     posAttr.needsUpdate = true;
     geo.computeBoundingSphere();
 
+    // Attach Pectoral Fins to the shoulder joints (index 3 along spine)
+    const shoulderIdx = 3;
+    const shoulderPos = fish.spine[shoulderIdx];
+    const shoulderAngle = fish.spineAngles[shoulderIdx];
+    const finFlutter = Math.sin(fish.tailPhase * 1.5) * 0.12;
+
+    this.leftFinMesh.position.set(shoulderPos.x, shoulderPos.y, 0.01);
+    this.leftFinMesh.rotation.z = shoulderAngle - Math.PI / 2 + finFlutter;
+
+    this.rightFinMesh.position.set(shoulderPos.x, shoulderPos.y, 0.01);
+    this.rightFinMesh.rotation.z = shoulderAngle - Math.PI / 2 - finFlutter;
+
+    // Attach Caudal Tail Fin to the last spine joint
+    const tailIdx = count - 1;
+    const tailPos = fish.spine[tailIdx];
+    const tailAngle = fish.spineAngles[tailIdx];
+    this.tailFinMesh.position.set(tailPos.x, tailPos.y, 0.02);
+    this.tailFinMesh.rotation.z = tailAngle - Math.PI / 2;
+
+    // Projected soft shadow follows body under water
     this.shadowMesh.position.set(
-      fish.position.x + 0.01,
-      fish.position.y - 0.01,
-      -0.1 - fish.depth * 0.3
+      fish.position.x + 0.03,
+      fish.position.y - 0.03,
+      -0.3 - fish.depth * 0.2
     );
+    this.shadowMesh.rotation.z = fish.heading - Math.PI / 2;
     (this.shadowMesh.material as THREE.MeshBasicMaterial).opacity =
-      0.1 + (1 - fish.depth) * 0.1;
+      0.35 * (1.0 - fish.depth * 0.4);
 
-    const depthFactor = 1 - fish.depth * 0.4;
-    const baseMat = this.bodyMesh.material as THREE.MeshLambertMaterial;
-    baseMat.opacity = 0.7 + (1 - fish.depth) * 0.3;
-    baseMat.transparent = fish.depth > 0.1;
-
-    if (fish.depth > 0.3) {
-      const tint = new THREE.Color(this.palette.body)
-        .multiplyScalar(depthFactor)
-        .lerp(new THREE.Color(0x1a6b8a), fish.depth * 0.3);
-      baseMat.color = tint;
-    } else {
-      baseMat.color.setHex(this.palette.body);
-    }
-
-    this.group.position.z = 0.05 + (1 - fish.depth) * 0.2;
+    // Z-depth placement for realistic water depth layering
+    this.group.position.z = 0.08 + (1 - fish.depth) * 0.28;
   }
 
   addToScene(scene: THREE.Scene): void {
@@ -683,8 +881,13 @@ class FishMeshGroup {
     (this.bodyMesh.material as THREE.Material).dispose();
     this.shadowMesh.geometry.dispose();
     (this.shadowMesh.material as THREE.Material).dispose();
+    this.leftFinMesh.geometry.dispose();
+    (this.leftFinMesh.material as THREE.Material).dispose();
+    this.rightFinMesh.geometry.dispose();
+    (this.rightFinMesh.material as THREE.Material).dispose();
+    this.tailFinMesh.geometry.dispose();
+    (this.tailFinMesh.material as THREE.Material).dispose();
   }
 }
 
-// Keep SPINE_COUNT import used (referenced in the type)
 void SPINE_COUNT;
