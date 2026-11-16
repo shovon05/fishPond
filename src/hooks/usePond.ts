@@ -1,4 +1,4 @@
-// usePond — the main hook that runs the pond simulation and rendering loop
+// usePond — hook running the pond simulation, minnows, and Three.js renderer loop
 
 import { useEffect, useRef, useCallback } from 'react';
 import { PondSimulation } from '../simulation/PondSimulation';
@@ -27,21 +27,17 @@ export function usePond(canvasRef: React.RefObject<HTMLCanvasElement>): {
   const settingsRef = useRef(settings);
   const isPausedRef = useRef(isPaused);
 
-  // Keep refs in sync for use inside the loop without stale closures
   useEffect(() => { settingsRef.current = settings; }, [settings]);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
 
-  // Initialise renderer and simulation once
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Simulation
     const s = new PondSimulation(42);
-    s.init(settings.fishCount);
+    s.init(settings.fishCount, settings.minnowCount);
     sim.current = s;
 
-    // Renderer
     const r = new PondRenderer(canvas);
     const ok = r.init(settings.atmosphere);
     webglAvailable.current = ok;
@@ -49,14 +45,12 @@ export function usePond(canvasRef: React.RefObject<HTMLCanvasElement>): {
 
     if (!ok) return;
 
-    // Size
     const resize = () => {
       const { innerWidth: w, innerHeight: h } = window;
       r.resize(w, h);
     };
     resize();
 
-    // Animation loop
     const loop = (now: number) => {
       rafId.current = requestAnimationFrame(loop);
       if (isPausedRef.current) {
@@ -67,13 +61,15 @@ export function usePond(canvasRef: React.RefObject<HTMLCanvasElement>): {
 
       const steps = clock.current.tick(now / 1000);
       const cfg = settingsRef.current;
-      const motionIntensity = cfg.motionIntensity;
+      const isRaining = cfg.atmosphere === 'rain';
 
       for (let i = 0; i < steps; i++) {
-        s.step(1 / 60, motionIntensity);
+        s.step(1 / 60, cfg.motionIntensity, isRaining);
       }
 
+      r.setDebugSpine(cfg.debugSpine);
       r.syncFish(s.fish);
+      r.syncMinnows(s.minnows);
       r.syncRipples(s.ripples);
       r.syncFood(s.food);
       r.render(now);
@@ -83,7 +79,6 @@ export function usePond(canvasRef: React.RefObject<HTMLCanvasElement>): {
     const ro = new ResizeObserver(resize);
     ro.observe(document.documentElement);
 
-    // Visibility change — pause when hidden
     const onVisChange = () => {
       if (document.hidden) {
         clock.current.pause();
@@ -102,17 +97,27 @@ export function usePond(canvasRef: React.RefObject<HTMLCanvasElement>): {
       renderer.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasRef]); // Only init once; settings updates handled below
+  }, [canvasRef]);
 
   // Fish count changes
   useEffect(() => {
     sim.current?.resize(settings.fishCount);
   }, [settings.fishCount]);
 
+  // Minnow count changes
+  useEffect(() => {
+    sim.current?.resizeMinnows(settings.minnowCount);
+  }, [settings.minnowCount]);
+
   // Atmosphere changes
   useEffect(() => {
     renderer.current?.setAtmosphere(settings.atmosphere);
   }, [settings.atmosphere]);
+
+  // Debug spine
+  useEffect(() => {
+    renderer.current?.setDebugSpine(settings.debugSpine);
+  }, [settings.debugSpine]);
 
   // Pause/resume
   useEffect(() => {
@@ -129,7 +134,7 @@ export function usePond(canvasRef: React.RefObject<HTMLCanvasElement>): {
       const s = sim.current;
       if (!r || !s) return;
       const world = r.screenToWorld(cssX, cssY);
-      s.attractToPoint(world, 2.5, 0.6, 6);
+      s.attractToPoint(world, 3.2, 0.75, 6);
     }, []),
 
     scatter: useCallback((cssX: number, cssY: number) => {

@@ -132,21 +132,31 @@ export function SettingsPanel() {
         </div>
 
         {/* Pond section */}
-        <section className="settings-section" aria-label="Pond">
-          <h3 className="settings-section-title">Pond</h3>
+        <section className="settings-section" aria-label="Pond Population">
+          <h3 className="settings-section-title">Pond Life</h3>
 
           <SliderRow
-            label="Fish"
+            label="Koi Fish"
             value={settings.fishCount}
-            min={3}
-            max={30}
+            min={4}
+            max={32}
             step={1}
             format={(v) => `${v} koi`}
             onChange={(v) => update('fishCount', v)}
           />
 
           <SliderRow
-            label="Motion intensity"
+            label="Minnows (School)"
+            value={settings.minnowCount}
+            min={0}
+            max={48}
+            step={4}
+            format={(v) => `${v} fish`}
+            onChange={(v) => update('minnowCount', v)}
+          />
+
+          <SliderRow
+            label="Motion Intensity"
             value={settings.motionIntensity}
             min={0.1}
             max={1}
@@ -158,7 +168,7 @@ export function SettingsPanel() {
 
         {/* Atmosphere section */}
         <section className="settings-section" aria-label="Atmosphere">
-          <h3 className="settings-section-title">Atmosphere</h3>
+          <h3 className="settings-section-title">Atmosphere & Weather</h3>
           <div className="atm-grid" role="group" aria-label="Atmosphere preset">
             {ATMOSPHERE_OPTIONS.map((opt) => (
               <button
@@ -176,8 +186,8 @@ export function SettingsPanel() {
         </section>
 
         {/* Visual section */}
-        <section className="settings-section" aria-label="Visual quality">
-          <h3 className="settings-section-title">Visual</h3>
+        <section className="settings-section" aria-label="Visual options">
+          <h3 className="settings-section-title">Visual & Diagnostics</h3>
           <div className="settings-row">
             <div className="settings-label"><span>Quality</span></div>
             <div className="quality-group" role="group" aria-label="Visual quality">
@@ -195,7 +205,13 @@ export function SettingsPanel() {
           </div>
 
           <ToggleRow
-            label="Reduced motion"
+            label="Procedural Spine View (D)"
+            checked={settings.debugSpine}
+            onChange={(v) => update('debugSpine', v)}
+          />
+
+          <ToggleRow
+            label="Reduced Motion"
             checked={settings.reducedMotion}
             onChange={(v) => update('reducedMotion', v)}
           />
@@ -203,9 +219,9 @@ export function SettingsPanel() {
 
         {/* Sound section */}
         <section className="settings-section" aria-label="Sound">
-          <h3 className="settings-section-title">Sound</h3>
+          <h3 className="settings-section-title">Ambient Sound</h3>
           <ToggleRow
-            label="Ambient audio"
+            label="River & Water Audio"
             checked={settings.soundEnabled}
             onChange={(v) => update('soundEnabled', v)}
           />
@@ -220,9 +236,6 @@ export function SettingsPanel() {
               onChange={(v) => update('soundVolume', v)}
             />
           )}
-          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
-            Ambient audio requires a user gesture to start. Toggle after interacting with the pond.
-          </p>
         </section>
 
         {/* Reset */}
@@ -232,7 +245,7 @@ export function SettingsPanel() {
             onClick={resetToDefaults}
             title="Reset all settings to defaults"
           >
-            Reset to defaults
+            Reset to defaults (R)
           </button>
         </section>
       </div>

@@ -15,6 +15,10 @@ export default function App() {
   const settingsPanelOpen = usePondStore((s) => s.settingsPanelOpen);
   const soundEnabled = usePondStore((s) => s.settings.soundEnabled);
   const soundVolume = usePondStore((s) => s.settings.soundVolume);
+  const fishCount = usePondStore((s) => s.settings.fishCount);
+  const debugSpine = usePondStore((s) => s.settings.debugSpine);
+  const updateSetting = usePondStore((s) => s.updateSetting);
+  const resetToDefaults = usePondStore((s) => s.resetToDefaults);
 
   // Sound sync
   useEffect(() => {
@@ -25,6 +29,7 @@ export default function App() {
     }
   }, [soundEnabled, soundVolume]);
 
+  // Keyboard shortcuts matching Nagomi conventions + Living Pond
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -33,11 +38,34 @@ export default function App() {
       switch (e.key) {
         case ' ':
           e.preventDefault();
-          togglePause();
+          // Nagomi spacebar: Scatter fish
+          setInteractionMode('scatter');
           break;
         case 'Tab':
+        case 'h':
+        case 'H':
           e.preventDefault();
+          // Hide / Show UI (Ambient mode)
           toggleAmbientMode();
+          break;
+        case 'd':
+        case 'D':
+          // Toggle procedural spine debug view
+          updateSetting('debugSpine', !debugSpine);
+          break;
+        case '[':
+          // Decrease fish count
+          updateSetting('fishCount', Math.max(4, fishCount - 1));
+          break;
+        case ']':
+          // Increase fish count
+          updateSetting('fishCount', Math.min(32, fishCount + 1));
+          break;
+        case 'r':
+        case 'R':
+          if (!e.ctrlKey && !e.metaKey) {
+            resetToDefaults();
+          }
           break;
         case 'a':
         case 'A':
@@ -53,6 +81,10 @@ export default function App() {
         case 'F':
           setInteractionMode('feed');
           break;
+        case 'p':
+        case 'P':
+          togglePause();
+          break;
         case ',':
           toggleSettingsPanel();
           break;
@@ -61,7 +93,7 @@ export default function App() {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [togglePause, toggleAmbientMode, toggleSettingsPanel]);
+  }, [togglePause, toggleAmbientMode, toggleSettingsPanel, fishCount, debugSpine, updateSetting, resetToDefaults]);
 
   return (
     <div className="app" aria-label="Living Pond application">
@@ -74,10 +106,12 @@ export default function App() {
       {settingsPanelOpen && (
         <div className="keyboard-shortcuts" aria-hidden="true">
           <div className="shortcut-row"><kbd>A</kbd><span>Attract</span></div>
-          <div className="shortcut-row"><kbd>S</kbd><span>Scatter</span></div>
+          <div className="shortcut-row"><kbd>Space</kbd><span>Scatter</span></div>
           <div className="shortcut-row"><kbd>F</kbd><span>Feed</span></div>
-          <div className="shortcut-row"><kbd>Space</kbd><span>Pause</span></div>
-          <div className="shortcut-row"><kbd>Tab</kbd><span>Ambient</span></div>
+          <div className="shortcut-row"><kbd>[</kbd> <kbd>]</kbd><span>Fish Count</span></div>
+          <div className="shortcut-row"><kbd>D</kbd><span>Spine Debug</span></div>
+          <div className="shortcut-row"><kbd>H</kbd> / <kbd>Tab</kbd><span>Hide UI</span></div>
+          <div className="shortcut-row"><kbd>R</kbd><span>Reset</span></div>
         </div>
       )}
     </div>

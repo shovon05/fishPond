@@ -1,6 +1,6 @@
 // Fish factory — creates initial FishState with deterministic seeded variation
 
-import type { FishState, Vec2 } from '../types';
+import type { FishState, MinnowState, Vec2 } from '../types';
 import { seededRandom } from '../utils/math';
 
 const SPINE_COUNT = 16;
@@ -15,17 +15,16 @@ export function createFish(id: number, pos: Vec2, globalSeed: number): FishState
 
   const personalitySeed = (globalSeed + id * 2654435761) >>> 0;
 
-  // Realistic pond dimensions: fish should be prominent, graceful koi
-  const size = 0.85 + r() * 0.45;           // 0.85–1.30
-  const bodyLength = 0.22 + r() * 0.08;    // substantial size in world coordinates [-1, 1]
-  const bodyWidth = bodyLength * (0.24 + r() * 0.06);
-  const preferredSpeed = 0.08 + r() * 0.08;
+  // Authentic Nagomi-scale koi proportions
+  const size = 0.95 + r() * 0.45;           // 0.95–1.40
+  const bodyLength = 0.28 + r() * 0.1;     // Large, magnificent koi visible across the pond
+  const bodyWidth = bodyLength * (0.24 + r() * 0.05);
+  const preferredSpeed = 0.07 + r() * 0.07;
   const turnResponsiveness = 0.5 + r() * 0.5;
-  const depth = 0.1 + r() * 0.5;           // keep closer to visible depth
-  const colorPalette = Math.floor(r() * 5);  // 0–4
+  const depth = 0.05 + r() * 0.55;
+  const colorPalette = Math.floor(r() * 6);  // 0–5 (Kohaku, Showa, Yamabuki, Shiro, Asagi, Tancho)
   const patchSeed = (r() * 0xffffffff) >>> 0;
 
-  // Scatter starting positions
   const heading = r() * Math.PI * 2;
   const speed = preferredSpeed * (0.8 + r() * 0.4);
 
@@ -50,7 +49,7 @@ export function createFish(id: number, pos: Vec2, globalSeed: number): FishState
     spine: makeSpine(pos),
     spineAngles: new Array(SPINE_COUNT).fill(heading),
     tailPhase: r() * Math.PI * 2,
-    tailAmplitude: 0.025 + r() * 0.015,
+    tailAmplitude: 0.035 + r() * 0.02,
     colorPalette,
     patchSeed,
     bodyLength,
@@ -63,12 +62,12 @@ export function createFish(id: number, pos: Vec2, globalSeed: number): FishState
 export function createSchool(count: number, seed: number): FishState[] {
   const rng = seededRandom(seed);
   const fish: FishState[] = [];
-  const halfW = 0.75;
-  const halfH = 0.75;
+  const halfW = 0.8;
+  const halfH = 0.8;
 
   for (let i = 0; i < count; i++) {
     const angle = rng() * Math.PI * 2;
-    const radius = 0.2 + rng() * 0.6;
+    const radius = 0.15 + rng() * 0.75;
     const pos: Vec2 = {
       x: Math.cos(angle) * radius * halfW,
       y: Math.sin(angle) * radius * halfH,
@@ -77,6 +76,25 @@ export function createSchool(count: number, seed: number): FishState[] {
   }
 
   return fish;
+}
+
+export function createMinnows(count: number, seed: number): MinnowState[] {
+  const rng = seededRandom(seed + 8888);
+  const minnows: MinnowState[] = [];
+  for (let i = 0; i < count; i++) {
+    const angle = rng() * Math.PI * 2;
+    const r = 0.1 + rng() * 0.7;
+    const heading = rng() * Math.PI * 2;
+    const speed = 0.12 + rng() * 0.1;
+    minnows.push({
+      id: i,
+      position: { x: Math.cos(angle) * r, y: Math.sin(angle) * r },
+      velocity: { x: Math.cos(heading) * speed, y: Math.sin(heading) * speed },
+      heading,
+      speed,
+    });
+  }
+  return minnows;
 }
 
 export { SPINE_COUNT };

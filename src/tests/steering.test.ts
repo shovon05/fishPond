@@ -23,25 +23,25 @@ describe('steering', () => {
     });
 
     it('steers right when near left edge', () => {
-      const fish = makeFishAt(-0.95, 0);
+      const fish = makeFishAt(-1.15, 0);
       const force = steerBoundary(fish, cfg);
       expect(force.x).toBeGreaterThan(0);
     });
 
     it('steers left when near right edge', () => {
-      const fish = makeFishAt(0.95, 0);
+      const fish = makeFishAt(1.15, 0);
       const force = steerBoundary(fish, cfg);
       expect(force.x).toBeLessThan(0);
     });
 
     it('steers down when near top edge', () => {
-      const fish = makeFishAt(0, 0.95);
+      const fish = makeFishAt(0, 1.15);
       const force = steerBoundary(fish, cfg);
       expect(force.y).toBeLessThan(0);
     });
 
     it('steers up when near bottom edge', () => {
-      const fish = makeFishAt(0, -0.95);
+      const fish = makeFishAt(0, -1.15);
       const force = steerBoundary(fish, cfg);
       expect(force.y).toBeGreaterThan(0);
     });

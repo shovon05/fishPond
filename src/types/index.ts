@@ -1,4 +1,4 @@
-// Core type definitions for Living Pond
+// Core type definitions for Living Pond (Nagomi-grade architecture)
 
 export interface Vec2 {
   x: number;
@@ -14,14 +14,22 @@ export interface FishTarget {
   expiresAt: number;
 }
 
+export interface MinnowState {
+  id: number;
+  position: Vec2;
+  velocity: Vec2;
+  heading: number;
+  speed: number;
+}
+
 export interface FishState {
   id: number;
   position: Vec2;
   velocity: Vec2;
-  heading: number;        // radians, 0 = right, CCW positive
+  heading: number;        // radians
   speed: number;
-  depth: number;          // 0 = surface, 1 = deepest
-  size: number;           // scale factor relative to base
+  depth: number;          // 0 = surface, 1 = deep
+  size: number;
   preferredSpeed: number;
   turnResponsiveness: number;
   wanderPhase: number;
@@ -29,16 +37,16 @@ export interface FishState {
   motionState: FishMotionState;
   stateTimer: number;
   target?: FishTarget;
-  // Spine for body articulation (12 points, head to tail)
+  // Spine chain (16 joints for high-fidelity fluid bend)
   spine: Vec2[];
   spineAngles: number[];
-  // Tail wave
+  // Tail dynamics
   tailPhase: number;
   tailAmplitude: number;
-  // Visual properties (derived from personalitySeed)
-  colorPalette: number;   // 0–4
+  // Japanese variety style
+  colorPalette: number;   // 0: Kohaku, 1: Showa, 2: Yamabuki, 3: Shiro, 4: Asagi, 5: Tancho
   patchSeed: number;
-  bodyLength: number;     // in world units
+  bodyLength: number;
   bodyWidth: number;
   depthTarget: number;
   depthChangeTimer: number;
@@ -69,6 +77,7 @@ export type AtmospherePreset = 'dawn' | 'noon' | 'dusk' | 'night' | 'rain';
 
 export interface PondSettings {
   fishCount: number;
+  minnowCount: number;
   motionIntensity: number;   // 0–1
   visualQuality: 'low' | 'medium' | 'high' | 'auto';
   soundEnabled: boolean;
@@ -77,11 +86,13 @@ export interface PondSettings {
   reducedMotion: boolean;
   ambientMode: boolean;
   showHint: boolean;
+  debugSpine: boolean;
 }
 
 export const DEFAULT_SETTINGS: PondSettings = {
-  fishCount: 12,
-  motionIntensity: 0.5,
+  fishCount: 14,
+  minnowCount: 28,
+  motionIntensity: 0.55,
   visualQuality: 'auto',
   soundEnabled: false,
   soundVolume: 0.5,
@@ -89,47 +100,45 @@ export const DEFAULT_SETTINGS: PondSettings = {
   reducedMotion: false,
   ambientMode: false,
   showHint: true,
+  debugSpine: false,
 };
 
 export interface SimulationConfig {
-  worldWidth: number;    // e.g. 2.0 (from -1 to 1)
+  worldWidth: number;
   worldHeight: number;
-  fixedDt: number;       // 1/60
+  fixedDt: number;
   maxFish: number;
-  // Steering weights
   wanderWeight: number;
   separationWeight: number;
   alignmentWeight: number;
   cohesionWeight: number;
   boundaryWeight: number;
-  // Radii
   separationRadius: number;
   alignmentRadius: number;
   cohesionRadius: number;
   boundaryMargin: number;
-  // Speeds
   minSpeed: number;
   maxSpeed: number;
   maxForce: number;
-  maxTurnRate: number;   // radians per second
+  maxTurnRate: number;
 }
 
 export const DEFAULT_SIM_CONFIG: SimulationConfig = {
-  worldWidth: 2.0,
-  worldHeight: 2.0,
+  worldWidth: 2.4,
+  worldHeight: 2.4,
   fixedDt: 1 / 60,
   maxFish: 50,
-  wanderWeight: 0.4,
-  separationWeight: 1.8,
+  wanderWeight: 0.45,
+  separationWeight: 1.9,
   alignmentWeight: 0.5,
-  cohesionWeight: 0.3,
-  boundaryWeight: 2.5,
-  separationRadius: 0.12,
-  alignmentRadius: 0.35,
-  cohesionRadius: 0.5,
-  boundaryMargin: 0.15,
-  minSpeed: 0.03,
-  maxSpeed: 0.45,
-  maxForce: 0.6,
-  maxTurnRate: Math.PI * 1.2,
+  cohesionWeight: 0.35,
+  boundaryWeight: 2.8,
+  separationRadius: 0.22,
+  alignmentRadius: 0.5,
+  cohesionRadius: 0.65,
+  boundaryMargin: 0.2,
+  minSpeed: 0.04,
+  maxSpeed: 0.48,
+  maxForce: 0.65,
+  maxTurnRate: Math.PI * 1.3,
 };
