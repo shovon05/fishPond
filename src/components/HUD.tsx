@@ -6,10 +6,10 @@ export function IdentityBadge() {
 
   return (
     <div className={`identity-badge ${isAmbientMode ? 'ambient-hidden' : ''}`} aria-hidden="true">
-      <div className="identity-pond-icon">🌿</div>
-      <div className="identity-text">
+      <div className="identity-kanji">和</div>
+      <div className="identity-copy">
         <span className="identity-name">Living Pond</span>
-        <span className="identity-tagline">A quiet little world</span>
+        <span className="identity-tagline">Autonomous Koi Ecology</span>
       </div>
     </div>
   );
@@ -23,8 +23,7 @@ export function InteractionHint() {
 
   return (
     <div className="interaction-hint" aria-hidden="true">
-      <span>🐟</span>
-      <span>Click the pond to call the koi</span>
+      <span>Tap pond water to attract koi</span>
     </div>
   );
 }
@@ -35,7 +34,7 @@ export function AmbientRevealHint() {
 
   return (
     <div className="ambient-reveal-hint" aria-live="polite">
-      Press Tab or move cursor to reveal controls
+      Press Tab to exit ambient view
     </div>
   );
 }

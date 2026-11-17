@@ -3,18 +3,18 @@ import { usePondStore } from '../store/pondStore';
 import type { AtmospherePreset, PondSettings } from '../types';
 import './SettingsPanel.css';
 
-const ATMOSPHERE_OPTIONS: Array<{ id: AtmospherePreset; icon: string; label: string }> = [
-  { id: 'dawn', icon: '🌅', label: 'Dawn' },
-  { id: 'noon', icon: '☀️', label: 'Noon' },
-  { id: 'dusk', icon: '🌇', label: 'Dusk' },
-  { id: 'night', icon: '🌙', label: 'Night' },
-  { id: 'rain', icon: '🌧️', label: 'Rain' },
+const ATMOSPHERE_OPTIONS: Array<{ id: AtmospherePreset; label: string }> = [
+  { id: 'dawn', label: 'Dawn' },
+  { id: 'noon', label: 'Noon' },
+  { id: 'dusk', label: 'Dusk' },
+  { id: 'night', label: 'Night' },
+  { id: 'rain', label: 'Rain' },
 ];
 
 const IconClose = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-    <line x1="18" y1="6" x2="6" y2="18"/>
-    <line x1="6" y1="6" x2="18" y2="18"/>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 
@@ -90,7 +90,6 @@ export function SettingsPanel() {
   const updateSetting = usePondStore((s) => s.updateSetting);
   const resetToDefaults = usePondStore((s) => s.resetToDefaults);
 
-  // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -120,7 +119,7 @@ export function SettingsPanel() {
         aria-modal={isOpen}
       >
         <div className="settings-header">
-          <h2 className="settings-title">Settings</h2>
+          <h2 className="settings-title">Pond Environment</h2>
           <button
             className="settings-close"
             onClick={() => setOpen(false)}
@@ -131,9 +130,9 @@ export function SettingsPanel() {
           </button>
         </div>
 
-        {/* Pond section */}
-        <section className="settings-section" aria-label="Pond Population">
-          <h3 className="settings-section-title">Pond Life</h3>
+        {/* Ecology section */}
+        <section className="settings-section" aria-label="Ecology">
+          <h3 className="settings-section-title">Ecology</h3>
 
           <SliderRow
             label="Koi Fish"
@@ -141,7 +140,7 @@ export function SettingsPanel() {
             min={4}
             max={32}
             step={1}
-            format={(v) => `${v} koi`}
+            format={(v) => `${v}`}
             onChange={(v) => update('fishCount', v)}
           />
 
@@ -151,7 +150,7 @@ export function SettingsPanel() {
             min={0}
             max={48}
             step={4}
-            format={(v) => `${v} fish`}
+            format={(v) => `${v}`}
             onChange={(v) => update('minnowCount', v)}
           />
 
@@ -168,7 +167,7 @@ export function SettingsPanel() {
 
         {/* Atmosphere section */}
         <section className="settings-section" aria-label="Atmosphere">
-          <h3 className="settings-section-title">Atmosphere & Weather</h3>
+          <h3 className="settings-section-title">Atmosphere</h3>
           <div className="atm-grid" role="group" aria-label="Atmosphere preset">
             {ATMOSPHERE_OPTIONS.map((opt) => (
               <button
@@ -176,20 +175,18 @@ export function SettingsPanel() {
                 className={`atm-btn ${settings.atmosphere === opt.id ? 'selected' : ''}`}
                 onClick={() => update('atmosphere', opt.id)}
                 aria-pressed={settings.atmosphere === opt.id}
-                title={opt.label}
               >
-                <span className="atm-icon" aria-hidden="true">{opt.icon}</span>
-                {opt.label}
+                <span>{opt.label}</span>
               </button>
             ))}
           </div>
         </section>
 
         {/* Visual section */}
-        <section className="settings-section" aria-label="Visual options">
-          <h3 className="settings-section-title">Visual & Diagnostics</h3>
+        <section className="settings-section" aria-label="Rendering">
+          <h3 className="settings-section-title">Rendering & Diagnostics</h3>
           <div className="settings-row">
-            <div className="settings-label"><span>Quality</span></div>
+            <div className="settings-label"><span>Quality Tier</span></div>
             <div className="quality-group" role="group" aria-label="Visual quality">
               {(['low', 'medium', 'high', 'auto'] as PondSettings['visualQuality'][]).map((q) => (
                 <button
@@ -205,7 +202,7 @@ export function SettingsPanel() {
           </div>
 
           <ToggleRow
-            label="Procedural Spine View (D)"
+            label="Procedural Spine Skeleton (D)"
             checked={settings.debugSpine}
             onChange={(v) => update('debugSpine', v)}
           />
@@ -218,10 +215,10 @@ export function SettingsPanel() {
         </section>
 
         {/* Sound section */}
-        <section className="settings-section" aria-label="Sound">
-          <h3 className="settings-section-title">Ambient Sound</h3>
+        <section className="settings-section" aria-label="Audio">
+          <h3 className="settings-section-title">Audio</h3>
           <ToggleRow
-            label="River & Water Audio"
+            label="Ambient Water Lap"
             checked={settings.soundEnabled}
             onChange={(v) => update('soundEnabled', v)}
           />
@@ -243,9 +240,9 @@ export function SettingsPanel() {
           <button
             className="reset-btn"
             onClick={resetToDefaults}
-            title="Reset all settings to defaults"
+            title="Reset settings to defaults"
           >
-            Reset to defaults (R)
+            Reset to defaults
           </button>
         </section>
       </div>
