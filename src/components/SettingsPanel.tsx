@@ -11,6 +11,17 @@ const ATMOSPHERE_OPTIONS: Array<{ id: AtmospherePreset; label: string }> = [
   { id: 'rain', label: 'Rain' },
 ];
 
+const SHORTCUTS = [
+  { keys: ['A'], action: 'Attract koi to pointer' },
+  { keys: ['Space', 'S'], action: 'Disturb water / scatter fish' },
+  { keys: ['F'], action: 'Drop food pellets' },
+  { keys: ['[', ']'], action: 'Decrease / increase fish count' },
+  { keys: ['D'], action: 'Toggle spine skeleton' },
+  { keys: ['P'], action: 'Pause / resume simulation' },
+  { keys: ['H', 'Tab'], action: 'Toggle ambient view' },
+  { keys: [','], action: 'Toggle settings' },
+];
+
 const IconClose = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
     <line x1="18" y1="6" x2="6" y2="18" />
@@ -233,6 +244,23 @@ export function SettingsPanel() {
               onChange={(v) => update('soundVolume', v)}
             />
           )}
+        </section>
+
+        {/* Shortcuts Section */}
+        <section className="settings-section" aria-label="Keyboard shortcuts">
+          <h3 className="settings-section-title">Keyboard Navigation</h3>
+          <div className="shortcuts-list">
+            {SHORTCUTS.map((item, idx) => (
+              <div key={idx} className="shortcut-item">
+                <div className="shortcut-keys">
+                  {item.keys.map((k, kIdx) => (
+                    <kbd key={kIdx}>{k}</kbd>
+                  ))}
+                </div>
+                <span className="shortcut-desc">{item.action}</span>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Reset */}

@@ -119,77 +119,71 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: var(--radius-md);
-  padding: 3px;
 }
 
 .atm-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 8px 2px;
+  justify-content: center;
+  padding: 8px 4px;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--ui-border);
+  background: rgba(0, 0, 0, 0.2);
   color: var(--ui-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   transition: all var(--transition-quick);
-  border: 1px solid transparent;
 }
 
 .atm-btn:hover {
   color: var(--ui-text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(120, 168, 159, 0.3);
 }
 
 .atm-btn.selected {
-  border-color: var(--ui-border-active);
+  background: rgba(120, 168, 159, 0.16);
+  border-color: var(--pond-celadon);
   color: var(--ui-text-primary);
-  background: var(--ui-surface-active);
 }
 
-/* Quality selector */
+/* Quality Group */
 .quality-group {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 3px;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: var(--radius-md);
-  padding: 3px;
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
 }
 
 .quality-btn {
+  flex: 1;
   padding: 6px 4px;
-  border-radius: var(--radius-sm);
-  text-align: center;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
   color: var(--ui-text-muted);
-  border: 1px solid transparent;
-  transition: all var(--transition-quick);
   text-transform: capitalize;
+  transition: all var(--transition-quick);
 }
 
 .quality-btn:hover {
   color: var(--ui-text-primary);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .quality-btn.selected {
-  border-color: var(--ui-border-active);
-  color: var(--ui-text-primary);
   background: var(--ui-surface-active);
+  color: var(--pond-celadon);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Toggle Switch */
+/* Toggle Row */
 .toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 13px;
   color: var(--ui-text-primary);
-  gap: var(--space-md);
 }
 
 .toggle-switch {
@@ -234,6 +228,36 @@
 
 .toggle-switch input:checked + .toggle-track::after {
   transform: translateX(18px);
+}
+
+/* Shortcuts List */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shortcut-desc {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+  text-align: right;
 }
 
 /* Reset Button */

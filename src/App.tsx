@@ -12,7 +12,6 @@ export default function App() {
   const toggleAmbientMode = usePondStore((s) => s.toggleAmbientMode);
   const togglePause = usePondStore((s) => s.togglePause);
   const toggleSettingsPanel = usePondStore((s) => s.toggleSettingsPanel);
-  const settingsPanelOpen = usePondStore((s) => s.settingsPanelOpen);
   const soundEnabled = usePondStore((s) => s.settings.soundEnabled);
   const soundVolume = usePondStore((s) => s.settings.soundVolume);
   const fishCount = usePondStore((s) => s.settings.fishCount);
@@ -38,7 +37,7 @@ export default function App() {
       switch (e.key) {
         case ' ':
           e.preventDefault();
-          // Nagomi spacebar: Scatter fish
+          // Space: Scatter fish
           setInteractionMode('scatter');
           break;
         case 'Tab':
@@ -103,17 +102,6 @@ export default function App() {
       <AmbientRevealHint />
       <ControlDock mode={interactionMode} onModeChange={setInteractionMode} />
       <SettingsPanel />
-      {settingsPanelOpen && (
-        <div className="keyboard-shortcuts" aria-hidden="true">
-          <div className="shortcut-row"><kbd>A</kbd><span>Attract</span></div>
-          <div className="shortcut-row"><kbd>Space</kbd><span>Scatter</span></div>
-          <div className="shortcut-row"><kbd>F</kbd><span>Feed</span></div>
-          <div className="shortcut-row"><kbd>[</kbd> <kbd>]</kbd><span>Fish Count</span></div>
-          <div className="shortcut-row"><kbd>D</kbd><span>Spine Debug</span></div>
-          <div className="shortcut-row"><kbd>H</kbd> / <kbd>Tab</kbd><span>Hide UI</span></div>
-          <div className="shortcut-row"><kbd>R</kbd><span>Reset</span></div>
-        </div>
-      )}
     </div>
   );
 }
